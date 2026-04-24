@@ -1,0 +1,751 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Termite Cooling · Stigmergy Simulation</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600&family=Syne:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #f5f6f8;
+  --bg2: #ffffff;
+  --bg3: #f0f2f5;
+  --bg4: #e8edf2;
+  --border: rgba(0,0,0,0.07);
+  --border2: rgba(0,0,0,0.13);
+  --text: #1a2330;
+  --text2: #5a6e82;
+  --text3: #9baabb;
+  --teal: #007a5e;
+  --teal2: #009e7a;
+  --teal3: rgba(0,122,94,0.07);
+  --amber: #b86c00;
+  --red: #c92a2a;
+  --blue: #1a6fc4;
+  --mono: 'JetBrains Mono', monospace;
+  --sans: 'Syne', sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--sans);}
+
+/* ── Scrollbars ── */
+::-webkit-scrollbar{width:3px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:#c8d4e0;border-radius:2px;}
+
+/* ── Shell ── */
+.shell{display:grid;grid-template-rows:56px 1fr;height:100vh;overflow:hidden;}
+.main{display:grid;grid-template-columns:230px 1fr 260px;overflow:hidden;}
+
+/* ── Header ── */
+header{
+  background:var(--bg2);
+  border-bottom:1px solid var(--border);
+  display:flex;align-items:center;gap:20px;
+  padding:0 20px;
+}
+.logo{
+  font-family:var(--mono);font-size:12px;font-weight:600;
+  color:var(--teal);letter-spacing:0.06em;white-space:nowrap;
+}
+.logo em{color:var(--text3);font-style:normal;}
+
+.hdr-pills{display:flex;gap:8px;margin-left:auto;flex-wrap:wrap;}
+.pill{
+  display:flex;align-items:center;gap:6px;
+  background:var(--bg3);border:1px solid var(--border);
+  border-radius:20px;padding:4px 10px;
+  font-family:var(--mono);font-size:11px;color:var(--text2);
+}
+.pill b{color:var(--text);font-weight:500;}
+.pulse{width:6px;height:6px;border-radius:50%;background:var(--teal);flex-shrink:0;}
+.pulse.on{animation:blink 1.4s ease-in-out infinite;}
+.pulse.warn{background:var(--amber);animation:none;}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0.3}}
+
+/* ── Left panel ── */
+.left{
+  background:var(--bg2);
+  border-right:1px solid var(--border);
+  padding:16px 14px;
+  display:flex;flex-direction:column;gap:18px;
+  overflow-y:auto;
+}
+.section-label{
+  font-family:var(--mono);font-size:9px;font-weight:600;
+  color:var(--text3);letter-spacing:0.18em;text-transform:uppercase;
+  margin-bottom:8px;
+}
+
+/* Agent activity block */
+.agent-block{
+  background:var(--bg3);border:1px solid var(--border);
+  border-radius:10px;padding:12px;
+}
+.agent-row{display:flex;align-items:center;gap:8px;margin-bottom:10px;}
+.agent-count{font-family:var(--mono);font-size:28px;font-weight:600;color:var(--teal);line-height:1;}
+.agent-meta{font-size:11px;color:var(--text2);line-height:1.5;}
+.agent-meta b{display:block;font-size:13px;color:var(--text);}
+
+.mini-stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;}
+.mini-stat{background:var(--bg2);border:1px solid var(--border);border-radius:7px;padding:8px 10px;}
+.mini-stat .label{font-family:var(--mono);font-size:9px;color:var(--text3);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:3px;}
+.mini-stat .val{font-family:var(--mono);font-size:17px;font-weight:500;}
+.mini-stat .val.ok{color:var(--teal);}
+.mini-stat .val.warn{color:var(--amber);}
+.mini-stat .val.bad{color:var(--red);}
+
+/* Controls */
+.btn{
+  width:100%;padding:8px 12px;border-radius:8px;
+  border:1px solid var(--border2);background:transparent;
+  color:var(--text);font-family:var(--sans);font-size:12px;font-weight:500;
+  cursor:pointer;display:flex;align-items:center;gap:8px;
+  transition:background 0.15s,border-color 0.15s;
+}
+.btn:hover{background:var(--bg4);}
+.btn.primary{border-color:var(--teal2);color:var(--teal);}
+.btn.primary:hover{background:rgba(0,163,112,0.12);}
+.btn.danger:hover{border-color:var(--red);color:var(--red);}
+.btn-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;}
+.btn-ico{font-size:15px;line-height:1;}
+
+.sep{height:1px;background:var(--border);}
+
+.slider-row{display:flex;flex-direction:column;gap:5px;}
+.slider-label{display:flex;justify-content:space-between;align-items:center;font-size:11px;color:var(--text2);}
+.slider-label span{font-family:var(--mono);font-size:11px;color:var(--teal);}
+input[type=range]{
+  -webkit-appearance:none;width:100%;height:2px;
+  background:var(--border2);border-radius:2px;outline:none;cursor:pointer;
+}
+input[type=range]::-webkit-slider-thumb{
+  -webkit-appearance:none;width:13px;height:13px;border-radius:50%;
+  background:var(--teal);cursor:pointer;
+  box-shadow:0 0 0 2px var(--bg2),0 0 0 3px var(--teal2);
+}
+
+.info-box{background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:12px;}
+.info-box p{font-size:11px;color:var(--text2);line-height:1.7;}
+.info-box b{color:var(--teal);font-weight:500;}
+
+/* ── Centre ── */
+.centre{display:flex;flex-direction:column;overflow:hidden;}
+
+.grid-topbar{
+  display:flex;align-items:center;gap:12px;
+  padding:12px 16px;border-bottom:1px solid var(--border);
+  background:var(--bg2);
+}
+.grid-topbar h2{font-size:12px;font-weight:600;color:var(--text2);}
+.legend{display:flex;gap:10px;margin-left:auto;}
+.leg{display:flex;align-items:center;gap:5px;font-size:10px;color:var(--text3);}
+.leg-dot{width:7px;height:7px;border-radius:2px;}
+
+.rack-grid{
+  display:grid;grid-template-columns:repeat(6,1fr);
+  gap:2px;padding:16px 12px;overflow-y:auto;flex:1;
+  align-content:start;
+}
+
+.rack{
+  display:flex;flex-direction:column;align-items:center;
+  padding:10px 4px 8px;cursor:pointer;
+  border-radius:10px;
+  transition:background 0.15s;
+  position:relative;
+}
+.rack:hover{background:rgba(0,0,0,0.03);}
+.rack:active{background:rgba(0,0,0,0.06);}
+
+.rack-svg{width:100%;max-width:80px;overflow:visible;}
+
+.rack-id{
+  font-family:var(--mono);font-size:9px;color:var(--text3);
+  margin-top:5px;letter-spacing:0.04em;
+}
+.rack-fan{
+  font-family:var(--mono);font-size:8px;color:var(--text3);
+  margin-top:1px;
+}
+
+/* active fan pulse on the SVG ring — kept for future use */
+
+/* Sparkline */
+.chart-wrap{padding:0 16px 12px;border-top:1px solid var(--border);}
+.chart-label{font-family:var(--mono);font-size:9px;color:var(--text3);letter-spacing:0.1em;text-transform:uppercase;padding:10px 0 7px;}
+#sparkline{width:100%;height:50px;}
+
+/* ── Right panel ── */
+.right{
+  background:var(--bg2);border-left:1px solid var(--border);
+  display:flex;flex-direction:column;overflow:hidden;
+}
+
+.big-stats{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border);}
+.big-stat{background:var(--bg2);padding:14px 12px;}
+.big-stat .lbl{font-family:var(--mono);font-size:9px;color:var(--text3);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:4px;}
+.big-stat .num{font-family:var(--mono);font-size:24px;font-weight:500;}
+.big-stat .num.ok{color:var(--teal);}
+.big-stat .num.warn{color:var(--amber);}
+.big-stat .num.bad{color:var(--red);}
+.big-stat .trend{font-size:10px;color:var(--text3);font-family:var(--mono);margin-top:2px;}
+
+/* Live optimizations counter */
+.opt-counter{
+  padding:12px;border-bottom:1px solid var(--border);
+  display:flex;flex-direction:column;gap:4px;
+}
+.opt-title{font-family:var(--mono);font-size:9px;color:var(--text3);letter-spacing:0.12em;text-transform:uppercase;}
+.opt-row{display:flex;align-items:baseline;gap:8px;}
+.opt-num{font-family:var(--mono);font-size:32px;font-weight:600;color:var(--teal);line-height:1;}
+.opt-sub{font-size:10px;color:var(--text2);}
+
+/* Fan activity bar */
+.fan-bar-wrap{padding:10px 12px;border-bottom:1px solid var(--border);}
+.fan-header{display:flex;justify-content:space-between;align-items:center;font-family:var(--mono);font-size:9px;color:var(--text3);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:8px;}
+.fan-header span{color:var(--teal);}
+.fan-bars{display:flex;flex-direction:column;gap:3px;}
+.fan-bar-row{display:flex;align-items:center;gap:6px;}
+.fan-bar-id{font-family:var(--mono);font-size:8px;color:var(--text3);width:18px;}
+.fan-bar-track{flex:1;height:4px;background:rgba(0,0,0,0.06);border-radius:2px;overflow:hidden;}
+.fan-bar-fill{height:100%;border-radius:2px;background:var(--blue);transition:width 0.4s;}
+.fan-bar-val{font-family:var(--mono);font-size:8px;color:var(--text3);width:26px;text-align:right;}
+
+/* Log */
+.log-title{font-family:var(--mono);font-size:9px;color:var(--text3);letter-spacing:0.12em;text-transform:uppercase;padding:10px 12px;border-bottom:1px solid var(--border);}
+.log-scroll{flex:1;overflow-y:auto;padding:8px 12px;display:flex;flex-direction:column;gap:5px;}
+.log-item{font-family:var(--mono);font-size:10px;color:var(--text2);line-height:1.5;border-left:2px solid var(--border2);padding:2px 0 2px 8px;}
+.log-item.warn{border-color:var(--amber);color:var(--amber);}
+.log-item.crit{border-color:var(--red);color:var(--red);}
+.log-tick{font-size:9px;color:var(--text3);margin-right:4px;}
+
+@keyframes numFlash{0%{color:inherit}30%{color:var(--teal)}100%{color:inherit}}
+.flash{animation:numFlash 0.4s ease-out;}
+</style>
+</head>
+<body>
+<div class="shell">
+
+<header>
+  <div class="logo">termite<em>·</em>cooling <em style="margin-left:4px">// stigmergy sim</em></div>
+  <div id="pulse" class="pulse on"></div>
+  <div class="hdr-pills">
+    <div class="pill">tick <b id="h-tick">0</b></div>
+    <div class="pill">elapsed <b id="h-elapsed">0s</b></div>
+    <div class="pill">ambient <b id="h-ambient">24°C</b></div>
+    <div class="pill">racks <b>24</b></div>
+  </div>
+</header>
+
+<div class="main">
+
+  <!-- ── Left ── -->
+  <div class="left">
+
+    <!-- Live agent activity -->
+    <div>
+      <div class="section-label">Swarm activity</div>
+      <div class="agent-block">
+        <div class="agent-row">
+          <div class="agent-count" id="a-responding">0</div>
+          <div class="agent-meta">
+            <b>agents responding</b>
+            <span id="a-sub">reading neighbour signals</span>
+          </div>
+        </div>
+        <div class="mini-stat-grid">
+          <div class="mini-stat">
+            <div class="label">Fan adjustments</div>
+            <div class="val ok" id="a-adjustments">0</div>
+          </div>
+          <div class="mini-stat">
+            <div class="label">Signal cascades</div>
+            <div class="val ok" id="a-cascades">0</div>
+          </div>
+          <div class="mini-stat">
+            <div class="label">Avg signal</div>
+            <div class="val" id="a-signal">0</div>
+          </div>
+          <div class="mini-stat">
+            <div class="label">Stability</div>
+            <div class="val ok" id="a-stability">—</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="sep"></div>
+
+    <!-- Simulation controls -->
+    <div>
+      <div class="section-label">Controls</div>
+      <div style="display:flex;flex-direction:column;gap:7px;">
+        <button class="btn primary" id="btn-pause" onclick="togglePause()">
+          <span class="btn-ico">⏸</span> Pause simulation
+        </button>
+        <button class="btn" onclick="addHotspot()"><span class="btn-ico">🔥</span> Inject hotspot</button>
+        <button class="btn danger" onclick="resetSim()"><span class="btn-ico">↺</span> Reset all</button>
+      </div>
+    </div>
+
+    <div class="sep"></div>
+
+    <!-- Environment sliders -->
+    <div>
+      <div class="section-label">Environment</div>
+      <div style="display:flex;flex-direction:column;gap:12px;">
+        <div class="slider-row">
+          <div class="slider-label">Ambient temperature <span id="lbl-ambient">24°C</span></div>
+          <input type="range" id="sl-ambient" min="18" max="42" value="24" oninput="setAmbient(this.value)">
+        </div>
+        <div class="slider-row">
+          <div class="slider-label">Signal evaporation <span id="lbl-evap">5</span></div>
+          <input type="range" id="sl-evap" min="1" max="20" value="5" oninput="setEvap(this.value)">
+        </div>
+      </div>
+    </div>
+
+    <div class="sep"></div>
+
+    <div class="info-box">
+      <p>
+        Each rack <b>deposits</b> a heat signal proportional to excess temp.
+        Signals <b>evaporate</b> over time. Agents read neighbour signals and
+        <b>raise fan speed</b> automatically — coordination through the environment.
+      </p>
+    </div>
+
+  </div>
+
+  <!-- ── Centre ── -->
+  <div class="centre">
+    <div class="grid-topbar">
+      <h2>Rack floor — 4 × 6 zones</h2>
+      <div class="legend">
+        <div class="leg"><div class="leg-dot" style="background:#3b82f6;border-radius:50%"></div>&lt;24°</div>
+        <div class="leg"><div class="leg-dot" style="background:#22c55e;border-radius:50%"></div>&lt;27°</div>
+        <div class="leg"><div class="leg-dot" style="background:#f59e0b;border-radius:50%"></div>&lt;32°</div>
+        <div class="leg"><div class="leg-dot" style="background:#ef4444;border-radius:50%"></div>32°+</div>
+      </div>
+    </div>
+    <div class="rack-grid" id="rack-grid"></div>
+    <div class="chart-wrap">
+      <div class="chart-label">Avg temperature history</div>
+      <svg id="sparkline" viewBox="0 0 600 50" preserveAspectRatio="none">
+        <line x1="0" y1="32" x2="600" y2="32" stroke="rgba(0,0,0,0.07)" stroke-width="1" stroke-dasharray="4 4"/>
+        <text x="3" y="29" fill="#9baabb" font-size="8" font-family="monospace">27°C</text>
+        <path id="spark-fill" d="" fill="rgba(0,122,94,0.08)"/>
+        <polyline id="spark-line" points="" fill="none" stroke="#007a5e" stroke-width="1.5" stroke-linejoin="round"/>
+      </svg>
+    </div>
+  </div>
+
+  <!-- ── Right ── -->
+  <div class="right">
+
+    <!-- 4 big stats -->
+    <div class="big-stats">
+      <div class="big-stat">
+        <div class="lbl">Avg temp</div>
+        <div class="num ok" id="s-avg">—</div>
+        <div class="trend" id="s-avg-trend"></div>
+      </div>
+      <div class="big-stat">
+        <div class="lbl">Max temp</div>
+        <div class="num" id="s-max">—</div>
+        <div class="trend" id="s-max-trend"></div>
+      </div>
+      <div class="big-stat">
+        <div class="lbl">Hot zones</div>
+        <div class="num" id="s-hot">—</div>
+        <div class="trend" id="s-hot-trend"></div>
+      </div>
+      <div class="big-stat">
+        <div class="lbl">Avg fan %</div>
+        <div class="num" id="s-fan">—</div>
+        <div class="trend" id="s-fan-trend"></div>
+      </div>
+    </div>
+
+    <!-- Live optimization counter -->
+    <div class="opt-counter">
+      <div class="opt-title">Total fan optimizations</div>
+      <div class="opt-row">
+        <div class="opt-num" id="opt-total">0</div>
+        <div class="opt-sub">adjustments since start</div>
+      </div>
+    </div>
+
+    <!-- Per-rack fan activity (top 6 most active) -->
+    <div class="fan-bar-wrap">
+      <div class="fan-header">Top active agents <span id="fan-bar-count">fan %</span></div>
+      <div class="fan-bars" id="fan-bars"></div>
+    </div>
+
+    <!-- Event log -->
+    <div class="log-title">Event log</div>
+    <div class="log-scroll" id="event-log"></div>
+
+  </div>
+
+</div>
+</div>
+
+<script>
+// ──────────────────────────────────────────────────────────────────
+//  Simulation (port of the Python logic)
+// ──────────────────────────────────────────────────────────────────
+const ROWS = 4, COLS = 6, N = ROWS * COLS;
+const TARGET_TEMP = 27, MAX_SIGNAL = 120, MAX_FAN = 100;
+
+let ambient = 24, evapRate = 5, paused = false;
+let tick = 0, startTime = Date.now();
+let history = [], eventLog = [];
+let totalAdjustments = 0, totalCascades = 0;
+
+function rnd(a, b) { return a + Math.random() * (b - a); }
+
+let racks = [];
+function initRacks() {
+  racks = Array.from({length: N}, (_, i) => {
+    const base = rnd(0.4, 0.75);
+    return { id: i, temp: ambient + rnd(0, 5), load: base, baseLoad: base, signal: 0, fan: 0, prevFan: 0 };
+  });
+}
+
+function neighbours(i) {
+  const r = Math.floor(i / COLS), c = i % COLS, nb = [];
+  if (r > 0) nb.push(i - COLS);
+  if (r < ROWS - 1) nb.push(i + COLS);
+  if (c > 0) nb.push(i - 1);
+  if (c < COLS - 1) nb.push(i + 1);
+  return nb;
+}
+
+function stepSim() {
+  tick++;
+
+  // Phase 1 — deposit
+  for (const r of racks) {
+    const excess = Math.max(0, r.temp - TARGET_TEMP);
+    r.signal += excess * 2.5;
+    r.signal -= evapRate;
+    r.signal = Math.max(0, Math.min(MAX_SIGNAL, r.signal));
+  }
+
+  // Phase 2 — read & respond
+  let adjustCount = 0, cascadeCount = 0;
+  for (let i = 0; i < N; i++) {
+    const r = racks[i];
+    r.prevFan = r.fan;
+    const nbSigs = neighbours(i).map(j => racks[j].signal);
+    const nbAvg = nbSigs.length ? nbSigs.reduce((a,b)=>a+b,0)/nbSigs.length : 0;
+    const eff = 0.65 * r.signal + 0.35 * nbAvg;
+    r.fan = Math.min(MAX_FAN, eff * 1.9);
+    if (Math.abs(r.fan - r.prevFan) > 1) adjustCount++;
+    if (nbAvg > 10 && r.signal > 5) cascadeCount++;
+  }
+  totalAdjustments += adjustCount;
+  totalCascades += cascadeCount;
+
+  // Phase 3 — physics
+  for (let i = 0; i < N; i++) {
+    const r = racks[i];
+    const nbTemps = neighbours(i).map(j => racks[j].temp);
+    const heatGen = r.load * 0.6;
+    const cooling = r.fan * 0.013;
+    const drift = (ambient - r.temp) * 0.008;
+    const conduct = nbTemps.length ? nbTemps.reduce((a,t)=>a+(t-r.temp),0)*0.02 : 0;
+    const noise = (Math.random()-0.5)*0.08;
+    r.temp += heatGen - cooling + drift + conduct + noise;
+    r.temp = Math.max(ambient-3, Math.min(70, r.temp));
+    // load decays back toward baseLoad at ~3% per tick
+    if (r.load > r.baseLoad) r.load = Math.max(r.baseLoad, r.load - 0.03);
+  }
+
+  // History
+  if (tick % 4 === 0) {
+    const avg = racks.reduce((a,r)=>a+r.temp,0)/N;
+    history.push({tick, avg: +avg.toFixed(2)});
+    if (history.length > 60) history.shift();
+  }
+
+  // Events
+  const hot = racks.filter(r=>r.temp>35).length;
+  if (hot > 0 && tick % 10 === 0)
+    logEvent(`Tick ${tick}: ${hot} rack(s) above 35°C — cascade active`, 'warn');
+  else if (tick % 40 === 0) {
+    const avg = racks.reduce((a,r)=>a+r.temp,0)/N;
+    logEvent(`Tick ${tick}: avg ${avg.toFixed(1)}°C — system stable`, '');
+  }
+}
+
+function logEvent(msg, type) {
+  eventLog.push({t: tick, msg, type});
+  if (eventLog.length > 20) eventLog.shift();
+}
+
+function addHotspot(idx) {
+  if (idx === undefined) idx = Math.floor(Math.random()*N);
+  const spike = rnd(10, 18);
+  racks[idx].temp += spike;
+  racks[idx].load = Math.min(1, racks[idx].load + 0.2);
+  logEvent(`Hotspot +${spike.toFixed(1)}°C → rack ${idx+1}`, 'warn');
+}
+
+function resetSim() {
+  tick = 0; history = []; eventLog = [];
+  totalAdjustments = 0; totalCascades = 0;
+  startTime = Date.now();
+  initRacks();
+  logEvent('Simulation reset — all agents reinitialised', '');
+}
+
+// ──────────────────────────────────────────────────────────────────
+//  Rendering
+// ──────────────────────────────────────────────────────────────────
+// arc color by temperature
+function arcColor(t) {
+  if (t < 24) return {arc:'#3b82f6', track:'#dbeafe', text:'#1d4ed8', delta_up:'#c92a2a', delta_dn:'#007a5e'};
+  if (t < 27) return {arc:'#22c55e', track:'#dcfce7', text:'#15803d', delta_up:'#c92a2a', delta_dn:'#007a5e'};
+  if (t < 32) return {arc:'#f59e0b', track:'#fef3c7', text:'#b45309', delta_up:'#c92a2a', delta_dn:'#007a5e'};
+  if (t < 40) return {arc:'#ef4444', track:'#fee2e2', text:'#b91c1c', delta_up:'#c92a2a', delta_dn:'#007a5e'};
+  return      {arc:'#7f1d1d', track:'#fecaca', text:'#7f1d1d', delta_up:'#c92a2a', delta_dn:'#007a5e'};
+}
+
+const R = 28, CX = 40, CY = 38;
+const CIRC = 2 * Math.PI * R;
+const GAP_DEG = 60;
+const ARC_DEG = 360 - GAP_DEG;
+const ARC_LEN = (ARC_DEG / 360) * CIRC;
+const TEMP_MIN = 18, TEMP_MAX = 50;
+
+// Single fan blade path (swept, points "up" from center 40,38)
+// Tip reaches ~20px above center, fits inside the ring (r=28)
+const BLADE = `M40,35 C34,28 33,22 37,19 Q39,17 42,19 C47,22 46,28 40,35Z`;
+
+function tempToArc(t) {
+  const pct = Math.max(0, Math.min(1, (t - TEMP_MIN) / (TEMP_MAX - TEMP_MIN)));
+  return pct * ARC_LEN;
+}
+
+const prevTemps = new Array(N).fill(0);
+
+// RAF-based fan rotation — smooth, speed-proportional
+const fanAngles = new Array(N).fill(0);
+let lastRAF = performance.now();
+
+function animateFans(ts) {
+  const dt = Math.min(ts - lastRAF, 50); // cap to avoid jump on tab refocus
+  lastRAF = ts;
+  for (let i = 0; i < N; i++) {
+    if (!racks[i]) continue;
+    // 0.38 deg/ms at full speed → ~1 rotation/sec at 100% fan
+    fanAngles[i] = (fanAngles[i] + (racks[i].fan / 100) * dt * 0.38) % 360;
+    const el = document.getElementById(`fan-${i}`);
+    if (el) el.setAttribute('transform', `rotate(${fanAngles[i].toFixed(1)} ${CX} ${CY})`);
+  }
+  requestAnimationFrame(animateFans);
+}
+requestAnimationFrame(animateFans);
+
+function renderGrid() {
+  const grid = document.getElementById('rack-grid');
+  const rot = 90 + GAP_DEG / 2; // arc gap at bottom
+
+  racks.forEach((r, i) => {
+    let card = document.getElementById(`rc-${i}`);
+    if (!card) {
+      card = document.createElement('div');
+      card.className = 'rack';
+      card.id = `rc-${i}`;
+      card.title = 'Click to inject hotspot';
+      card.onclick = () => addHotspot(i);
+      card.innerHTML = `
+        <svg class="rack-svg" viewBox="0 0 80 76">
+          <!-- temperature arc track -->
+          <circle class="gauge-track" cx="${CX}" cy="${CY}" r="${R}"
+            fill="none" stroke="#e5e7eb" stroke-width="5" stroke-linecap="round"
+            stroke-dasharray="${ARC_LEN} ${CIRC}"
+            transform="rotate(${rot} ${CX} ${CY})"/>
+          <!-- temperature arc fill -->
+          <circle class="gauge-arc" id="ga-${i}" cx="${CX}" cy="${CY}" r="${R}"
+            fill="none" stroke="#22c55e" stroke-width="5" stroke-linecap="round"
+            stroke-dasharray="0 ${CIRC}"
+            transform="rotate(${rot} ${CX} ${CY})"
+            style="transition:stroke-dasharray 0.5s cubic-bezier(.4,0,.2,1),stroke 0.5s"/>
+          <!-- spinning fan group — rotated by RAF -->
+          <g id="fan-${i}" transform="rotate(0 ${CX} ${CY})">
+            <path d="${BLADE}" fill="#a8bfce" opacity="0.72"/>
+            <path d="${BLADE}" fill="#a8bfce" opacity="0.72" transform="rotate(120 ${CX} ${CY})"/>
+            <path d="${BLADE}" fill="#a8bfce" opacity="0.72" transform="rotate(240 ${CX} ${CY})"/>
+            <!-- hub dot -->
+            <circle cx="${CX}" cy="${CY}" r="3.5" fill="#7a98ae"/>
+          </g>
+          <!-- frosted disc behind text for legibility -->
+          <circle cx="${CX}" cy="${CY}" r="12" fill="white" opacity="0.78"/>
+          <!-- temperature value -->
+          <text id="gt-${i}" x="${CX}" y="${CY + 4}" text-anchor="middle"
+            font-family="JetBrains Mono,monospace" font-size="11" font-weight="500"
+            fill="#15803d">—</text>
+          <!-- live delta arrow -->
+          <text id="gd-${i}" x="${CX}" y="${CY + 15}" text-anchor="middle"
+            font-family="JetBrains Mono,monospace" font-size="7"
+            fill="#9baabb"></text>
+        </svg>
+        <div class="rack-id">R${i+1}</div>
+        <div class="rack-fan" id="rf-${i}"></div>`;
+      grid.appendChild(card);
+    }
+
+    const col = arcColor(r.temp);
+    const arcLen = tempToArc(r.temp);
+
+    document.getElementById(`ga-${i}`).setAttribute('stroke-dasharray', `${arcLen} ${CIRC}`);
+    document.getElementById(`ga-${i}`).setAttribute('stroke', col.arc);
+    card.querySelector('.gauge-track').setAttribute('stroke', col.track);
+
+    const tempEl = document.getElementById(`gt-${i}`);
+    tempEl.textContent = r.temp.toFixed(1) + '°';
+    tempEl.setAttribute('fill', col.text);
+
+    const delta = r.temp - prevTemps[i];
+    const deltaEl = document.getElementById(`gd-${i}`);
+    if (Math.abs(delta) >= 0.05) {
+      deltaEl.textContent = (delta > 0 ? '▲' : '▼') + Math.abs(delta).toFixed(1);
+      deltaEl.setAttribute('fill', delta > 0 ? '#ef4444' : '#007a5e');
+    } else {
+      deltaEl.textContent = '';
+    }
+    prevTemps[i] = r.temp;
+
+    document.getElementById(`rf-${i}`).textContent = `fan ${r.fan.toFixed(0)}%`;
+  });
+}
+
+function renderSparkline() {
+  if (history.length < 2) return;
+  const W = 600, H = 50;
+  const temps = history.map(h=>h.avg);
+  const minT = Math.min(...temps, 20), maxT = Math.max(...temps, 35);
+  const py = t => H - 3 - ((t - minT) / (maxT - minT + 0.01)) * (H - 10);
+  const xs = history.map((_, i) => (i / (history.length - 1)) * W);
+  const pts = history.map((h, i) => `${xs[i].toFixed(1)},${py(h.avg).toFixed(1)}`).join(' ');
+  document.getElementById('spark-line').setAttribute('points', pts);
+  document.getElementById('spark-fill').setAttribute('d',
+    `M ${xs[0]} ${H} ` +
+    history.map((h,i) => `L ${xs[i].toFixed(1)} ${py(h.avg).toFixed(1)}`).join(' ') +
+    ` L ${xs[xs.length-1]} ${H} Z`
+  );
+}
+
+let prevAvg = 0, prevMax = 0;
+function renderStats() {
+  const temps = racks.map(r=>r.temp);
+  const fans = racks.map(r=>r.fan);
+  const avg = temps.reduce((a,b)=>a+b,0)/N;
+  const max = Math.max(...temps);
+  const hot = temps.filter(t=>t>32).length;
+  const avgFan = fans.reduce((a,b)=>a+b,0)/N;
+
+  const setNum = (id, val, cls) => {
+    const el = document.getElementById(id);
+    if (el.textContent !== val) {
+      el.textContent = val;
+      el.className = 'num ' + cls;
+    }
+  };
+
+  setNum('s-avg', avg.toFixed(1)+'°', avg<27?'ok':avg<32?'warn':'bad');
+  setNum('s-max', max.toFixed(1)+'°', max<27?'ok':max<35?'warn':'bad');
+  setNum('s-hot', hot, hot===0?'ok':hot<3?'warn':'bad');
+  setNum('s-fan', avgFan.toFixed(0)+'%', 'ok');
+
+  document.getElementById('s-avg-trend').textContent = avg > prevAvg+0.05 ? '▲ rising' : avg < prevAvg-0.05 ? '▼ falling' : '● stable';
+  document.getElementById('s-max-trend').textContent = 'peak: ' + max.toFixed(1) + '°C';
+  prevAvg = avg; prevMax = max;
+
+  // Swarm activity
+  const responding = racks.filter(r=>r.fan>30).length;
+  document.getElementById('a-responding').textContent = responding;
+  document.getElementById('a-sub').textContent = responding > 16 ? 'high activity — cascading' : responding > 8 ? 'active — spreading signals' : 'low activity — system cool';
+  document.getElementById('a-adjustments').textContent = totalAdjustments.toLocaleString();
+  document.getElementById('a-cascades').textContent = totalCascades.toLocaleString();
+  const avgSig = racks.reduce((a,r)=>a+r.signal,0)/N;
+  document.getElementById('a-signal').textContent = avgSig.toFixed(1);
+  const stability = hot === 0 ? 'STABLE' : hot < 3 ? 'WARM' : 'HOT';
+  const stabEl = document.getElementById('a-stability');
+  stabEl.textContent = stability;
+  stabEl.className = 'val ' + (hot===0?'ok':hot<3?'warn':'bad');
+
+  document.getElementById('opt-total').textContent = totalAdjustments.toLocaleString();
+}
+
+function renderFanBars() {
+  const sorted = [...racks].sort((a,b)=>b.fan-a.fan).slice(0,6);
+  const wrap = document.getElementById('fan-bars');
+  wrap.innerHTML = sorted.map(r=>`
+    <div class="fan-bar-row">
+      <div class="fan-bar-id">R${r.id+1}</div>
+      <div class="fan-bar-track"><div class="fan-bar-fill" style="width:${r.fan}%"></div></div>
+      <div class="fan-bar-val">${r.fan.toFixed(0)}%</div>
+    </div>
+  `).join('');
+}
+
+function renderLog() {
+  const el = document.getElementById('event-log');
+  el.innerHTML = [...eventLog].reverse().map(e=>`
+    <div class="log-item ${e.type==='warn'?'warn':e.type==='crit'?'crit':''}">
+      <span class="log-tick">t${e.t}</span>${e.msg}
+    </div>
+  `).join('');
+}
+
+function renderHeader() {
+  document.getElementById('h-tick').textContent = tick;
+  document.getElementById('h-elapsed').textContent = Math.floor((Date.now()-startTime)/1000)+'s';
+  document.getElementById('h-ambient').textContent = ambient+'°C';
+}
+
+// ──────────────────────────────────────────────────────────────────
+//  Main loop
+// ──────────────────────────────────────────────────────────────────
+initRacks();
+
+setInterval(() => {
+  if (!paused) stepSim();
+  renderGrid();
+  renderStats();
+  renderSparkline();
+  renderFanBars();
+  renderLog();
+  renderHeader();
+}, 500);
+
+// ──────────────────────────────────────────────────────────────────
+//  UI handlers
+// ──────────────────────────────────────────────────────────────────
+function togglePause() {
+  paused = !paused;
+  const btn = document.getElementById('btn-pause');
+  const dot = document.getElementById('pulse');
+  btn.innerHTML = paused
+    ? '<span class="btn-ico">▶</span> Resume simulation'
+    : '<span class="btn-ico">⏸</span> Pause simulation';
+  dot.className = 'pulse' + (paused ? ' warn' : ' on');
+}
+
+function setAmbient(v) {
+  ambient = parseFloat(v);
+  document.getElementById('lbl-ambient').textContent = v + '°C';
+}
+
+function setEvap(v) {
+  evapRate = parseFloat(v);
+  document.getElementById('lbl-evap').textContent = v;
+}
+</script>
+</body>
+</html>

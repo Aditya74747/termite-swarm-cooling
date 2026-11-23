@@ -11,7 +11,7 @@ A swarm intelligence simulation where 24 server racks keep themselves cool **wit
 ![JavaScript](https://img.shields.io/badge/JavaScript-Vanilla-F7DF1E?style=for-the-badge&logo=javascript&logoColor=black)
 ![Swarm Intelligence](https://img.shields.io/badge/Swarm-Stigmergy-00C896?style=for-the-badge)
 ![License](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)
-
+ 
 <br>
 
 <img src="docs/images/web-demo.png" alt="Termite Swarm Cooling: browser dashboard after injecting hotspots" width="900">

@@ -11,7 +11,9 @@ A swarm intelligence simulation where 24 server racks keep themselves cool **wit
 ![JavaScript](https://img.shields.io/badge/JavaScript-Vanilla-F7DF1E?style=for-the-badge&logo=javascript&logoColor=black)
 ![Swarm Intelligence](https://img.shields.io/badge/Swarm-Stigmergy-00C896?style=for-the-badge)
 ![License](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)
- 
+
+**Built by** [Aditya Ghatage](https://github.com/Aditya74747) · [Ayesha](https://github.com/ayeshasiddikha1101)
+
 <br>
 
 <img src="docs/images/web-demo.png" alt="Termite Swarm Cooling: browser dashboard after injecting hotspots" width="900">
@@ -31,6 +33,7 @@ A swarm intelligence simulation where 24 server racks keep themselves cool **wit
 - [Swarm Intelligence Concepts](#-swarm-intelligence-concepts)
 - [Parameters](#%EF%B8%8F-parameters)
 - [Project Structure](#-project-structure)
+- [Authors](#-authors)
 - [License](#-license)
 
 ---
@@ -207,6 +210,15 @@ termite-swarm-cooling/
 
 After a minute the simulation is live at
 **https://aditya74747.github.io/termite-swarm-cooling/**
+
+---
+
+## 👥 Authors
+
+| Name | GitHub |
+|---|---|
+| **Aditya Ghatage** | [@Aditya74747](https://github.com/Aditya74747) |
+| **Ayesha** | [@ayeshasiddikha1101](https://github.com/ayeshasiddikha1101) |
 
 ---
 
